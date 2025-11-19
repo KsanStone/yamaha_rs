@@ -1,5 +1,68 @@
 use serde::Deserialize;
 
+pub enum ResponseCode {
+    Successful = 0,
+    Initializing = 1,
+    InternalError = 2,
+    InvalidRequest = 3,
+    InvalidParameter = 4,
+    Guarded = 5,
+    TimeOut = 6,
+    FirmwareUpdating = 99,
+    AccessError = 100,
+    OtherErrors = 101,
+    WrongUserName = 102,
+    WrongPassword = 103,
+    AccountExpired = 104,
+    AccountDisconnected = 105,
+    AccountLimitReached = 106,
+    ServerMaintenance = 107,
+    InvalidAccount = 108,
+    LicenseError = 109,
+    ReadOnlyMode = 110,
+    MaxStations = 111,
+    AccessDenied = 112,
+    NeedSpecifyPlaylist = 113,
+    NeedCreatePlaylist = 114,
+    SimultaneousLoginsLimit = 115,
+    LinkingInProgress = 200,
+    UnlinkingInProgress = 201,
+}
+
+impl From<u32> for ResponseCode {
+    fn from(code: u32) -> Self {
+        match code {
+            0 => ResponseCode::Successful,
+            1 => ResponseCode::Initializing,
+            2 => ResponseCode::InternalError,
+            3 => ResponseCode::InvalidRequest,
+            4 => ResponseCode::InvalidParameter,
+            5 => ResponseCode::Guarded,
+            6 => ResponseCode::TimeOut,
+            99 => ResponseCode::FirmwareUpdating,
+            100 => ResponseCode::AccessError,
+            101 => ResponseCode::OtherErrors,
+            102 => ResponseCode::WrongUserName,
+            103 => ResponseCode::WrongPassword,
+            104 => ResponseCode::AccountExpired,
+            105 => ResponseCode::AccountDisconnected,
+            106 => ResponseCode::AccountLimitReached,
+            107 => ResponseCode::ServerMaintenance,
+            108 => ResponseCode::InvalidAccount,
+            109 => ResponseCode::LicenseError,
+            110 => ResponseCode::ReadOnlyMode,
+            111 => ResponseCode::MaxStations,
+            112 => ResponseCode::AccessDenied,
+            113 => ResponseCode::NeedSpecifyPlaylist,
+            114 => ResponseCode::NeedCreatePlaylist,
+            115 => ResponseCode::SimultaneousLoginsLimit,
+            200 => ResponseCode::LinkingInProgress,
+            201 => ResponseCode::UnlinkingInProgress,
+            _ => ResponseCode::OtherErrors,
+        }
+    }
+}
+
 #[derive(Deserialize, Default)]
 pub struct DeviceInfo {
     pub model_name: String,
