@@ -1,6 +1,7 @@
+use std::collections::HashSet;
 use std::io::{Read, Write};
 use std::net::{TcpStream, ToSocketAddrs, UdpSocket};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use crate::structs::YamahaDevice;
 
@@ -10,20 +11,34 @@ pub fn discover_yamaha_devices() -> Vec<YamahaDevice> {
         .set_read_timeout(Some(Duration::from_secs(3)))
         .unwrap();
     socket.send_to("M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\nMAN: \"ssdp:discover\"\r\nMX: 2\r\nST: ssdp:all\r\n\r\n".as_bytes(), "239.255.255.250:1900".to_socket_addrs().unwrap().next().unwrap()).unwrap();
+    
+    let start = Instant::now();
     let mut buf = [0u8; 4096];
+
+    let mut seen = HashSet::new();
     let mut result = Vec::new();
 
-    if let Ok((n, src)) = socket.recv_from(&mut buf) {
-        let resp = String::from_utf8_lossy(&buf[..n]);
+    while start.elapsed() < Duration::from_secs(3) {
+        if let Ok((n, src)) = socket.recv_from(&mut buf) {
+            let ip = src.ip();
 
-        if let Some(loc) = extract_header(&resp, "LOCATION")
-            && let Some((friendly, manu)) = extract_device_info(&loc)
-            && manu == "Yamaha Corporation"
-        {
-            result.push(YamahaDevice {
-                ip: src.ip(),
-                name: friendly,
-            });
+            if seen.contains(&ip) {
+                continue;
+            }
+
+            let resp = String::from_utf8_lossy(&buf[..n]);
+
+            if let Some(loc) = extract_header(&resp, "LOCATION") {
+                if let Some((friendly, manu)) = extract_device_info(&loc) {
+                    if manu == "Yamaha Corporation" {
+                        seen.insert(ip.clone());
+                        result.push(YamahaDevice {
+                            ip,
+                            name: friendly,
+                        });
+                    }
+                }
+            }
         }
     }
 
