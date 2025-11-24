@@ -189,4 +189,176 @@ pub struct AudioSignal {
     pub error: u32,
     pub format: String,
     pub fs: String,
+    pub bitrate: u32,
+    pub bit: String
+}
+
+#[derive(Deserialize, Serialize, Default, Debug)]
+pub struct DeviceFeatures {
+    pub system: System,
+    pub zone: Vec<Zone>,
+    pub tuner: Tuner,
+    pub netusb: NetUsb,
+    pub distribution: Distribution,
+    pub ccs: Ccs,
+}
+
+#[derive(Deserialize, Serialize, Default, Debug)]
+pub struct System {
+    pub func_list: Vec<String>,
+    pub zone_num: i32,
+    pub input_list: Vec<SystemInput>,
+    pub bluetooth: Option<SystemBluetooth>,
+    pub web_control_url: Option<String>,
+    pub party_volume_list: Option<Vec<String>>,
+    pub hdmi_standby_through_list: Option<Vec<String>>,
+    pub works_with_sonos: Option<WorksWithSonos>,
+}
+
+#[derive(Deserialize, Serialize, Default, Debug)]
+pub struct SystemInput {
+    pub id: String,
+    pub distribution_enable: bool,
+    pub rename_enable: bool,
+    pub account_enable: bool,
+    pub play_info_type: String,
+}
+
+#[derive(Deserialize, Serialize, Default, Debug)]
+pub struct SystemBluetooth {
+    pub update_cancelable: bool,
+    pub tx_connectivity_type_max: Option<i32>,
+}
+
+#[derive(Deserialize, Serialize, Default, Debug)]
+pub struct WorksWithSonos {
+    pub zone: Vec<SonosZone>,
+}
+
+#[derive(Deserialize, Serialize, Default, Debug)]
+pub struct SonosZone {
+    pub id: String,
+    pub input_list: Vec<String>,
+}
+
+#[derive(Deserialize, Serialize, Default, Debug)]
+pub struct Zone {
+    pub id: String,
+    pub zone_b: Option<bool>,
+    pub func_list: Vec<String>,
+    pub input_list: Vec<String>,
+    pub sound_program_list: Option<Vec<String>>,
+    pub surr_decoder_type_list: Option<Vec<String>>,
+    pub tone_control_mode_list: Option<Vec<String>>,
+    pub link_control_list: Option<Vec<String>>,
+    pub link_audio_delay_list: Option<Vec<String>>,
+    pub range_step: Vec<RangeStep>,
+    pub scene_num: Option<i32>,
+    pub cursor_list: Option<Vec<String>>,
+    pub menu_list: Option<Vec<String>>,
+    pub actual_volume_mode_list: Option<Vec<String>>,
+    pub ccs_supported: Option<Vec<String>>,
+}
+
+#[derive(Deserialize, Serialize, Default, Debug)]
+pub struct RangeStep {
+    pub id: String,
+    pub min: f32,
+    pub max: f32,
+    pub step: f32,
+}
+
+#[derive(Deserialize, Serialize, Default, Debug)]
+pub struct Tuner {
+    pub func_list: Vec<String>,
+    pub range_step: Vec<TunerRangeStep>,
+    pub preset: TunerPreset,
+}
+
+#[derive(Deserialize, Serialize, Default, Debug)]
+pub struct TunerRangeStep {
+    pub id: String,
+    pub min: i32,
+    pub max: i32,
+    pub step: i32,
+}
+
+#[derive(Deserialize, Serialize, Default, Debug)]
+pub struct TunerPreset {
+    pub r#type: String,
+    pub num: i32,
+}
+
+#[derive(Deserialize, Serialize, Default, Debug)]
+pub struct NetUsb {
+    pub func_list: Vec<String>,
+    pub preset: NetUsbPreset,
+    pub recent_info: NetUsbRecentInfo,
+    pub play_queue: NetUsbQueue,
+    pub mc_playlist: NetUsbMcPlaylist,
+    pub net_radio_type: String,
+    pub tidal: Option<NetUsbTidal>,
+    pub qobuz: Option<NetUsbQobuz>,
+}
+
+#[derive(Deserialize, Serialize, Default, Debug)]
+pub struct NetUsbPreset {
+    pub num: i32,
+}
+
+#[derive(Deserialize, Serialize, Default, Debug)]
+pub struct NetUsbRecentInfo {
+    pub num: i32,
+}
+
+#[derive(Deserialize, Serialize, Default, Debug)]
+pub struct NetUsbQueue {
+    pub size: i32,
+}
+
+#[derive(Deserialize, Serialize, Default, Debug)]
+pub struct NetUsbMcPlaylist {
+    pub size: i32,
+    pub num: i32,
+}
+
+#[derive(Deserialize, Serialize, Default, Debug)]
+pub struct NetUsbTidal {
+    pub mode: String,
+}
+
+#[derive(Deserialize, Serialize, Default, Debug)]
+pub struct NetUsbQobuz {
+    pub login_type: String,
+}
+
+#[derive(Deserialize, Serialize, Default, Debug)]
+pub struct Distribution {
+    pub version: f32,
+    pub compatible_client: Vec<i32>,
+    pub client_max: i32,
+    pub server_zone_list: Vec<String>,
+    pub mc_surround: Option<McSurround>,
+}
+
+#[derive(Deserialize, Serialize, Default, Debug)]
+pub struct McSurround {
+    pub version: f32,
+    pub func_list: Vec<String>,
+    pub master_role: McRole,
+    pub slave_role: McRole,
+}
+
+#[derive(Deserialize, Serialize, Default, Debug)]
+pub struct McRole {
+    pub surround_pair: Option<bool>,
+    pub stereo_pair: Option<bool>,
+    pub subwoofer_pair: Option<bool>,
+    pub surround_pair_l_or_r: Option<bool>,
+    pub surround_pair_lr: Option<bool>,
+}
+
+#[derive(Deserialize, Serialize, Default, Debug)]
+pub struct Ccs {
+    pub supported: bool,
 }

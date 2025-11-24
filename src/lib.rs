@@ -11,6 +11,7 @@ use serde_json::Value;
 
 pub use crate::discover::discover_yamaha_devices;
 
+use crate::structs::DeviceFeatures;
 pub use crate::structs::{
     DeviceInfo, ResponseCode, SignalInfo, YamahaDevice, ZoneProgramList, ZoneStatus,
 };
@@ -401,6 +402,26 @@ pub fn set_extra_bass(ip: &str, zone: &str, bass: bool) -> Result<(), ResponseCo
         .ok_or(ResponseCode::InternalError)? as u32;
     if code == 0 {
         Ok(())
+    } else {
+        Err(ResponseCode::from(code))
+    }
+}
+
+pub fn get_features(ip: &str) -> Result<DeviceFeatures, ResponseCode> {
+    let body = match yamaha_get(ip, "/v1/system/getFeatures") {
+        Ok(b) => b,
+        Err(_) => return Err(ResponseCode::InternalError),
+    };
+
+    let value: Value = serde_json::from_str(&body).map_err(|_| ResponseCode::InternalError)?;
+    let code = value
+        .get("response_code")
+        .and_then(|v| v.as_u64())
+        .ok_or(ResponseCode::InternalError)? as u32;
+    if code == 0 {
+        let info: DeviceFeatures =
+            serde_json::from_value(value).map_err(|_| ResponseCode::InternalError)?;
+        Ok(info)
     } else {
         Err(ResponseCode::from(code))
     }
