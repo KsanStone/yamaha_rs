@@ -11,10 +11,7 @@ use serde_json::Value;
 
 pub use crate::discover::discover_yamaha_devices;
 
-use crate::structs::DeviceFeatures;
-pub use crate::structs::{
-    DeviceInfo, ResponseCode, SignalInfo, YamahaDevice, ZoneProgramList, ZoneStatus,
-};
+pub use crate::structs::*;
 
 fn yamaha_get(host: &str, path: &str) -> Result<String, Box<dyn std::error::Error>> {
     let addr = (host, 80)
@@ -420,6 +417,26 @@ pub fn get_features(ip: &str) -> Result<DeviceFeatures, ResponseCode> {
         .ok_or(ResponseCode::InternalError)? as u32;
     if code == 0 {
         let info: DeviceFeatures =
+            serde_json::from_value(value).map_err(|_| ResponseCode::InternalError)?;
+        Ok(info)
+    } else {
+        Err(ResponseCode::from(code))
+    }
+}
+
+pub fn net_usb_get_play_info(ip: &str) -> Result<NetUsbPlayInfo, ResponseCode> {
+    let body = match yamaha_get(ip, "/v1/netusb/getPlayInfo") {
+        Ok(b) => b,
+        Err(_) => return Err(ResponseCode::InternalError),
+    };
+
+    let value: Value = serde_json::from_str(&body).map_err(|_| ResponseCode::InternalError)?;
+    let code = value
+        .get("response_code")
+        .and_then(|v| v.as_u64())
+        .ok_or(ResponseCode::InternalError)? as u32;
+    if code == 0 {
+        let info: NetUsbPlayInfo =
             serde_json::from_value(value).map_err(|_| ResponseCode::InternalError)?;
         Ok(info)
     } else {
