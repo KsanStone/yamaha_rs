@@ -10,7 +10,9 @@ homepage = "https://github.com/Kriannn/yamaha_rs"
 repository = "https://github.com/Kriannn/yamaha_rs"
 
 [dependencies]
+if-addrs = "0.14.0"
 serde = { version = "1.0.228", default-features = false, features = ["derive"] }
 serde_json = {version = "1.0.145", default-features = false, features = ["alloc"] }
+log = "0.4.28"
 strum = "0.27.2"
 strum_macros = "0.27.2"

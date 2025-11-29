@@ -1,7 +1,7 @@
 mod discover;
+pub mod enums;
 pub mod error;
 mod structs;
-pub mod enums;
 
 use crate::enums::*;
 use serde::de::DeserializeOwned;
@@ -21,11 +21,18 @@ enum Method {
     Post,
 }
 
-fn send_request(host: &str, path: &str, method: Method, body_json: Option<String>) -> Result<String, InternalError> {
-    let addr = (host, 80)
-        .to_socket_addrs()?
-        .next()
-        .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::AddrNotAvailable, "Failed to resolve host"))?;
+fn send_request(
+    host: &str,
+    path: &str,
+    method: Method,
+    body_json: Option<String>,
+) -> Result<String, InternalError> {
+    let addr = (host, 80).to_socket_addrs()?.next().ok_or_else(|| {
+        std::io::Error::new(
+            std::io::ErrorKind::AddrNotAvailable,
+            "Failed to resolve host",
+        )
+    })?;
 
     let mut stream = TcpStream::connect_timeout(&addr, Duration::from_secs(5))?;
     stream.set_read_timeout(Some(Duration::from_secs(5)))?;
@@ -71,7 +78,11 @@ fn execute_get<T: DeserializeOwned>(ip: &str, path: &str) -> Result<T, Error> {
     parse_response(&body)
 }
 
-fn execute_post<T: DeserializeOwned, B: Serialize>(ip: &str, path: &str, body_data: &B) -> Result<T, Error> {
+fn execute_post<T: DeserializeOwned, B: Serialize>(
+    ip: &str,
+    path: &str,
+    body_data: &B,
+) -> Result<T, Error> {
     let json_str = serde_json::to_string(body_data)?;
     let body = send_request(ip, path, Method::Post, Some(json_str))?;
     parse_response(&body)
@@ -80,9 +91,12 @@ fn execute_post<T: DeserializeOwned, B: Serialize>(ip: &str, path: &str, body_da
 fn parse_response<T: DeserializeOwned>(body: &str) -> Result<T, Error> {
     let value: serde_json::Value = serde_json::from_str(body)?;
 
-    let code = value.get("response_code")
+    let code = value
+        .get("response_code")
         .and_then(|v| v.as_u64())
-        .ok_or_else(|| InternalError::DeserializationError(serde::de::Error::custom("Missing response_code")))? as u32;
+        .ok_or_else(|| {
+            InternalError::DeserializationError(serde::de::Error::custom("Missing response_code"))
+        })? as u32;
 
     if code == 0 {
         if std::any::type_name::<T>() == "()" {
@@ -113,11 +127,11 @@ macro_rules! yamaha_req {
 macro_rules! yamaha_post_req {
     // POST: yamaha_req!(ip, "/path", body_struct, ReturnType)
     ($ip:expr, $path:expr, $body:expr, $ret:ty) => {
-    crate::execute_post::<$ret, _>($ip, &$path, &$body)
+        crate::execute_post::<$ret, _>($ip, &$path, &$body)
     };
     // POST (Void): yamaha_req!(ip, "/path", body_struct)
     ($ip:expr, $path:expr, $body:expr) => {
-    crate::execute_post::<(), _>($ip, &$path, &$body)
+        crate::execute_post::<(), _>($ip, &$path, &$body)
     };
 }
 
@@ -228,7 +242,7 @@ pub fn net_usb_set_search_string(
     ip: &str,
     list_id: &str,
     search_text: &str,
-    index: Option<u32>
+    index: Option<u32>,
 ) -> Result<(), Error> {
     let req_body = SearchRequest {
         list_id: list_id.to_string(),
@@ -244,11 +258,14 @@ pub fn net_usb_get_list_info(
     input: &str,
     index: u32,
     size: u32,
-    lang: &str
+    lang: &str,
 ) -> Result<ListInfo, Error> {
     yamaha_req!(
         ip,
-        format!("/v1/netusb/getListInfo?input={}&index={}&size={}&lang={}", input, index, size, lang),
+        format!(
+            "/v1/netusb/getListInfo?input={}&index={}&size={}&lang={}",
+            input, index, size, lang
+        ),
         ListInfo
     )
 }
@@ -258,7 +275,7 @@ pub fn net_usb_set_list_control(
     list_id: &str,
     control_type: ListControl,
     index: Option<u32>,
-    zone: Option<&str>
+    zone: Option<&str>,
 ) -> Result<(), Error> {
     let mut url = format!(
         "/v1/netusb/setListControl?list_id={}&type={}",

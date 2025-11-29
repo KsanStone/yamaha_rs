@@ -1,17 +1,100 @@
+use crate::structs::YamahaDevice;
+use if_addrs::get_if_addrs;
+use log::{debug, error};
 use std::collections::HashSet;
 use std::io::{Read, Write};
-use std::net::{TcpStream, ToSocketAddrs, UdpSocket};
+use std::net::{IpAddr, TcpStream, ToSocketAddrs, UdpSocket};
+use std::sync::{Arc, Mutex};
+use std::thread;
 use std::time::{Duration, Instant};
 
-use crate::structs::YamahaDevice;
-
 pub fn discover_yamaha_devices() -> Vec<YamahaDevice> {
-    let socket = UdpSocket::bind("0.0.0.0:0").unwrap();
+    let mut candidates = vec![];
+    // Note: only windows need special treatment in order to receive back the UDP packets.
+    // it needs to be bound to the interface in the same network as the devices.
+    #[cfg(target_os = "windows")]
+    {
+        debug!("Windows detected, discovering devices from all interfaces.");
+
+        match get_if_addrs() {
+            Ok(ifaces) => {
+                let mut handles = Vec::new();
+                let candidates_arc = Arc::new(Mutex::new(Vec::new()));
+
+                for iface in ifaces {
+                    if !iface.ip().is_ipv4() {
+                        debug!("Skipping non-IPv4 iface {}", iface.name);
+                        continue;
+                    }
+                    if iface.is_loopback() {
+                        debug!("Skipping loopback iface {}", iface.name);
+                        continue;
+                    }
+                    if iface.name.starts_with("vEthernet") {
+                        debug!("Skipping virtual iface {}", iface.name);
+                        continue;
+                    }
+                    debug!("Found iface {} {}", iface.name, iface.ip());
+
+                    let ip_str = iface.ip().to_string();
+                    let candidates_arc = Arc::clone(&candidates_arc);
+
+                    let handle = thread::spawn(move || {
+                        let iface_candidates = discover_candidates_from_iface_addr(&ip_str);
+                        let mut c = candidates_arc.lock().unwrap();
+                        c.extend(iface_candidates);
+                    });
+
+                    handles.push(handle);
+                }
+
+                for handle in handles {
+                    handle.join().unwrap();
+                }
+                candidates = candidates_arc.lock().unwrap().clone();
+            }
+            Err(e) => error!("Failed to get interfaces: {}", e),
+        }
+    }
+    // Mac/linux can receive the broadcast packets from any interface.
+    #[cfg(not(target_os = "windows"))]
+    {
+        debug!("Non-Windows detected, discovering devices from 0.0.0.0");
+        candidates.extend(crate::discover::discover_candidates_from_iface_addr(
+            "0.0.0.0",
+        ));
+    }
+
+    let result = Arc::new(Mutex::new(Vec::new()));
+    let mut handles = Vec::new();
+
+    for (ip, loc) in candidates {
+        let result = Arc::clone(&result);
+        let handle = thread::spawn(move || {
+            if let Some((friendly, manu)) = extract_device_info(&loc)
+                && manu == "Yamaha Corporation"
+            {
+                let mut r = result.lock().unwrap();
+                r.push(YamahaDevice { ip, name: friendly });
+            }
+        });
+        handles.push(handle);
+    }
+
+    for handle in handles {
+        handle.join().unwrap();
+    }
+
+    Arc::try_unwrap(result).unwrap().into_inner().unwrap()
+}
+
+fn discover_candidates_from_iface_addr(iface: &str) -> Vec<(IpAddr, String)> {
+    let socket = UdpSocket::bind(format!("{iface}:0")).unwrap();
     socket
         .set_read_timeout(Some(Duration::from_secs(3)))
         .unwrap();
     socket
-        .set_read_timeout(Some(Duration::from_secs(1)))
+        .set_write_timeout(Some(Duration::from_secs(1)))
         .unwrap();
     socket.send_to("M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\nMAN: \"ssdp:discover\"\r\nMX: 2\r\nST: ssdp:all\r\n\r\n".as_bytes(), "239.255.255.250:1900".to_socket_addrs().unwrap().next().unwrap()).unwrap();
 
@@ -38,16 +121,7 @@ pub fn discover_yamaha_devices() -> Vec<YamahaDevice> {
         }
     }
 
-    let mut result = Vec::new();
-    for (ip, loc) in candidates {
-        if let Some((friendly, manu)) = extract_device_info(&loc)
-            && manu == "Yamaha Corporation"
-        {
-            result.push(YamahaDevice { ip, name: friendly });
-        }
-    }
-
-    result
+    candidates
 }
 
 fn extract_header(resp: &str, header: &str) -> Option<String> {
