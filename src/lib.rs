@@ -1,7 +1,9 @@
 mod discover;
 pub mod error;
 mod structs;
+pub mod enums;
 
+use crate::enums::*;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 use std::{
@@ -170,4 +172,24 @@ pub fn set_balance(ip: &str, zone: &str, balance: i32) -> Result<(), Error> {
 
 pub fn set_extra_bass(ip: &str, zone: &str, bass: bool) -> Result<(), Error> {
     yamaha_req!(ip, format!("/v1/{}/setExtraBass?enable={}", zone, bass))
+}
+
+pub fn net_usb_set_playback(ip: &str, playback: Playback) -> Result<(), Error> {
+    yamaha_req!(ip, format!("/v1/netusb/setPlayback?playback={}", playback))
+}
+
+pub fn net_usb_set_repeat(ip: &str, mode: Repeat) -> Result<(), Error> {
+    yamaha_req!(ip, format!("/v1/netusb/setRepeat?mode={}", mode))
+}
+
+pub fn net_usb_set_shuffle(ip: &str, mode: Shuffle) -> Result<(), Error> {
+    yamaha_req!(ip, format!("/v1/netusb/setShuffle?mode={}", mode))
+}
+
+pub fn net_usb_toggle_repeat(ip: &str) -> Result<(), Error> {
+    yamaha_req!(ip, "/v1/netusb/toggleRepeat".to_string())
+}
+
+pub fn net_usb_toggle_shuffle(ip: &str) -> Result<(), Error> {
+    yamaha_req!(ip, "/v1/netusb/toggleShuffle".to_string())
 }
