@@ -252,6 +252,7 @@ pub struct Zone {
     pub tone_control_mode_list: Option<Vec<String>>,
     pub link_control_list: Option<Vec<String>>,
     pub link_audio_delay_list: Option<Vec<String>>,
+    #[serde(default)]
     pub range_step: Vec<RangeStep>,
     pub scene_num: Option<i32>,
     pub cursor_list: Option<Vec<String>>,
