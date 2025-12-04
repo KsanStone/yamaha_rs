@@ -14,6 +14,8 @@ pub fn discover_yamaha_devices() -> Vec<YamahaDevice> {
     #[cfg(target_os = "windows")]
     {
         debug!("Windows detected, discovering devices from all interfaces.");
+        use if_addrs::get_if_addrs;
+        use log::error;
 
         match get_if_addrs() {
             Ok(ifaces) => {
