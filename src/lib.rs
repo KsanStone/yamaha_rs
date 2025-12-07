@@ -361,3 +361,13 @@ pub fn net_usb_set_play_position(ip: &str, position: u32) -> Result<(), Error> {
         format!("/v1/netusb/setPlayPosition?position={}", position)
     )
 }
+
+pub fn net_usb_recall_recent(ip: &str, zone: &str, recent_info_index: u32) -> Result<(), Error> {
+    yamaha_req!(
+        ip,
+        format!(
+            "/v1/netusb/recallRecentItem?num={}&zone={}",
+            recent_info_index, zone
+        )
+    )
+}
